@@ -13,9 +13,11 @@ func (o *OrderService) CreateOrder(product string) error {
 	if err != nil {
 		return err
 	}
+
 	if !available {
 		return ErrProductUnavailable
 	}
+
 	return nil
 }
 
