@@ -24,12 +24,12 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v7
         with:
-          go-version-file: order-service/go.mod
+          go-version-file: services/order-service/go.mod
           cache: false
 
       - name: Install gosec
         run: go install github.com/securego/gosec/v2/cmd/gosec@latest
 
       - name: Security scan
-        working-directory: order-service
+        working-directory: services/order-service
         run: gosec -no-fail ./...

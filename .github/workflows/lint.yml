@@ -24,11 +24,11 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v7
         with:
-          go-version-file: order-service/go.mod
+          go-version-file: services/order-service/go.mod
           cache: false
 
       - name: Check formatting
-        working-directory: order-service
+        working-directory: services/order-service
         shell: bash
         run: |
           unformatted="$(gofmt -l .)"
@@ -40,5 +40,5 @@ jobs:
           fi
 
       - name: Vet
-        working-directory: order-service
+        working-directory: services/order-service
         run: go vet ./...

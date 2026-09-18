@@ -27,21 +27,23 @@ Service Layer
 - различие transport validation и business validation;
 - начальная связка `main -> handler -> OrderService` через передачу зависимости в `createOrderHandler`.
 
-## В процессе
+## Состояние по коду на 2026-09-14
 
-Service Layer: первая бизнес-проверка товара `"unavailable"`.
+В main включён PR #17 (`95c8285`). Handler использует errors.Is для
+ErrProductUnavailable, возвращает безопасные 400/500 и нормализованный product.
+Старое поручение повторно создать PR после #10 больше не актуально.
 
-## Текущая задача
+## Текущая задача обучения
 
-Перед продолжением обучения завершить техническую правку после merge PR №10:
+Продолжить Service Layer: разобрать контракт ошибок и границу HTTP/business logic.
+Не считать весь этап завершённым только по наличию кода. Следующее упражнение
+согласовать в учебном диалоге; PostgreSQL и другие будущие уроки заранее не решены.
 
-- создать отдельный PR из коммита `6fdab38` (`minimal changes`), в котором только форматирование `service/order_service.go`;
-- дождаться зелёной проверки lint в новом PR; старый failed run для коммита `70526b3` не перезапускать;
-- затем заменить передачу `err.Error()` клиенту на безопасный текст `product cannot be ordered`;
-- исправить Bruno assertion в `Create unavailable order`: `expression` должен быть `res.status`, значение — `400`.
+## Переезд структуры
 
-## Следующая тема
-
-Продолжить Service Layer: почему handler не должен знать бизнес-правила и как service возвращает ошибки.
-
-Во время следующего занятия начать с нового PR для форматирования, затем закончить первый сценарий business validation.
+- Репозиторий: zolotoy-dev-backend (бывший stockflow).
+- Модуль: services/order-service; запуск: go run ./cmd/order-service.
+- Handler/main: cmd/order-service/main.go; service: internal/service/order_service.go.
+- Доменные наработки: internal/domain; Bruno: api/bruno/order-service-local.
+- Старые эксперименты: ../../pending-review относительно модуля.
+- История LESSONS.md сохранена; её старые пути и PR относятся к прошлым занятиям.

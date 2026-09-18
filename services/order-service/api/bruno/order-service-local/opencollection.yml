@@ -1,7 +1,7 @@
 opencollection: 1.0.0
 
 info:
-  name: Stockflow local
+  name: zolotoy.dev — Order Service local
 bundled: false
 extensions:
   bruno:

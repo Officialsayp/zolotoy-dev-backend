@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/MaximZolotoy/stockflow/services/order-service/service"
+	"github.com/Officialsayp/zolotoy-dev-backend/services/order-service/internal/service"
 )
 
 type createOrderRequest struct {

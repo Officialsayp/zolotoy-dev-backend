@@ -24,9 +24,9 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v7
         with:
-          go-version-file: order-service/go.mod
+          go-version-file: services/order-service/go.mod
           cache: false
 
       - name: Test
-        working-directory: order-service
+        working-directory: services/order-service
         run: go test ./...

@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-cd "$(git rev-parse --show-toplevel)/order-service"
+cd "$(git rev-parse --show-toplevel)/services/order-service"
 
 echo "==> Formatting"
 unformatted="$(gofmt -l .)"
