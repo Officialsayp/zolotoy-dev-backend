@@ -1,0 +1,37 @@
+info:
+  name: Post-request
+  type: http
+  seq: 7
+
+http:
+  method: POST
+  url: "{{baseUrl}}/orders"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "buyer_id": "buyer-123",
+        "payment_method": "prepaid",
+        "items": [
+          {
+            "product_id": "keyboard-001",
+            "name": "Keyboard",
+            "quantity": 2,
+            "unit_price": 499000,
+            "currency": "RUB"
+          }
+        ],
+        "delivery_address": "Krasnodar",
+        "buyer_comment": "Call before delivery"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

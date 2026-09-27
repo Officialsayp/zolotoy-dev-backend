@@ -13,14 +13,6 @@ import (
 	"github.com/Officialsayp/zolotoy-dev-backend/services/order-service/internal/service"
 )
 
-type createOrderRequest struct {
-	Product string `json:"product"`
-}
-
-type createOrderResponse struct {
-	Product string `json:"product"`
-}
-
 func getOrderHandler(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	idInt, err1 := strconv.Atoi(idStr)
@@ -60,32 +52,62 @@ func healthHandler(w http.ResponseWriter, _ *http.Request) {
 
 func createOrderHandler(orderService *service.OrderService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req createOrderRequest
-		errReq := json.NewDecoder(r.Body).Decode(&req)
-		if errReq != nil {
-			http.Error(w, "incorrect Body", http.StatusBadRequest)
+		var req createOrderV1Request
+
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "incorrect body", http.StatusBadRequest)
 			return
 		}
-		product := strings.TrimSpace(req.Product)
-
-		if product == "" {
-			http.Error(
-				w,
-				"product is required",
-				http.StatusBadRequest,
-			)
+		if strings.TrimSpace(req.BuyerID) == "" {
+			http.Error(w, "buyer_id is required", http.StatusBadRequest)
 			return
 		}
 
-		err := orderService.CreateOrder(product)
+		if strings.TrimSpace(req.PaymentMethod) == "" {
+			http.Error(w, "payment_method is required", http.StatusBadRequest)
+			return
+		}
+
+		if len(req.Items) == 0 {
+			http.Error(w, "items are required", http.StatusBadRequest)
+			return
+		}
+
+		if strings.TrimSpace(req.DeliveryAddress) == "" {
+			http.Error(w, "delivery_address is required", http.StatusBadRequest)
+			return
+		}
+
+		for _, item := range req.Items {
+			if strings.TrimSpace(item.ProductID) == "" {
+				http.Error(w, "product_id is required", http.StatusBadRequest)
+				return
+			}
+
+			if item.Quantity <= 0 {
+				http.Error(w, "quantity must be greater than zero", http.StatusBadRequest)
+				return
+			}
+		}
+
+		input := req.toServiceInput()
+
+		order, err := orderService.CreateOrder(input)
+
 		if err != nil {
-			if errors.Is(
-				err,
-				service.ErrProductUnavailable,
-			) {
+			if errors.Is(err, service.ErrProductUnavailable) {
 				http.Error(
 					w,
 					"product cannot be ordered",
+					http.StatusBadRequest,
+				)
+				return
+			}
+
+			if errors.Is(err, service.ErrInvalidOrder) {
+				http.Error(
+					w,
+					"invalid order",
 					http.StatusBadRequest,
 				)
 				return
@@ -98,13 +120,17 @@ func createOrderHandler(orderService *service.OrderService) http.HandlerFunc {
 			)
 			return
 		}
+		response := newCreateOrderResponse(order)
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(createOrderResponse{
-			Product: product,
-		})
-		return
+
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			return
+		}
+
 	}
+
 }
 
 func main() {

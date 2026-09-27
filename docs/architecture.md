@@ -53,4 +53,7 @@ PostgreSQL/Kafka/Redis появляются с конкретным сценар
 | Shortener | Ownership, anonymous create, update/status/analytics DTO, 404/410; hostname из short_url |
 
 Порядок: решение в backend MD → OpenAPI/контрактные проверки → frontend adapter
-→ реальный сценарий. Учебный `{product}` не подменяет целевой контракт заказа.
+→ реальный сценарий. Текущий учебный `POST /orders` уже создаёт `domain.Order`
+через `createOrderV1Request`, но имя DTO не означает наличие маршрута `/api/v1/orders`.
+Хранение и live-контракт пока не реализованы; точный прогресс — в
+[SESSION_STATE](../services/order-service/.ai/SESSION_STATE.md).

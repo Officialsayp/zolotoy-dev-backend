@@ -13,13 +13,12 @@ type Order struct {
 	paymentStatus   OrderPaymentStatus
 	buyerID         BuyerID
 	paymentMethod   PaymentMethod
-	paymentTiming   PaymentTiming
 	deliveryAddress DeliveryAddress
 	deliveryCost    Money
 	buyerComment    BuyerComment
 }
 
-func NewOrder(id ID, items []OrderItem, buyerID BuyerID, paymentMethod PaymentMethod, paymentTiming PaymentTiming, deliveryAddress DeliveryAddress, buyerComment BuyerComment) (Order, error) {
+func NewOrder(id ID, items []OrderItem, buyerID BuyerID, paymentMethod PaymentMethod, deliveryAddress DeliveryAddress, buyerComment BuyerComment) (Order, error) {
 	switch {
 	case id == "":
 		return Order{}, errors.New("id is empty")
@@ -29,8 +28,6 @@ func NewOrder(id ID, items []OrderItem, buyerID BuyerID, paymentMethod PaymentMe
 		return Order{}, errors.New("buyer id is empty")
 	case paymentMethod == "":
 		return Order{}, errors.New("payment method is empty")
-	case paymentTiming == "":
-		return Order{}, errors.New("payment timing is empty")
 	case deliveryAddress == "":
 		return Order{}, errors.New("delivery address is empty")
 	}
@@ -49,7 +46,6 @@ func NewOrder(id ID, items []OrderItem, buyerID BuyerID, paymentMethod PaymentMe
 		paymentStatus:   OrderPaymentStatusAwaitingPayment,
 		buyerID:         buyerID,
 		paymentMethod:   paymentMethod,
-		paymentTiming:   paymentTiming,
 		deliveryAddress: deliveryAddress,
 		deliveryCost:    deliveryCost,
 		buyerComment:    buyerComment,
@@ -118,15 +114,15 @@ func (o *Order) Cancel() error {
 }
 
 func (o *Order) StartPayment() error {
-	switch o.paymentTiming {
-	case PaymentTimingPrepaid:
+	switch o.paymentMethod {
+	case PaymentMethodPrepaid:
 		if o.status != OrderStatusCreated {
 			return errors.New(
 				"prepaid payment can only be started for a created order",
 			)
 		}
 
-	case PaymentTimingOnReceipt:
+	case PaymentMethodPayOnReceiptOnline:
 		if o.status != OrderStatusDelivered {
 			return errors.New(
 				"payment on receipt can only be started after delivery",
@@ -134,22 +130,22 @@ func (o *Order) StartPayment() error {
 		}
 
 	default:
-		return errors.New("unknown payment timing")
+		return errors.New("unknown payment method")
 	}
 	o.paymentStatus = OrderPaymentStatusProcessing
 	return nil
 }
 
 func (o *Order) StartProcessing() error {
-	switch o.paymentTiming {
-	case PaymentTimingPrepaid:
+	switch o.paymentMethod {
+	case PaymentMethodPrepaid:
 		if o.paymentStatus != OrderPaymentStatusPaid {
 			return errors.New(
 				"prepaid order must be paid before processing",
 			)
 		}
 
-	case PaymentTimingOnReceipt:
+	case PaymentMethodPayOnReceiptOnline:
 		if o.paymentStatus != OrderPaymentStatusAwaitingPayment {
 			return errors.New(
 				"payment-on-receipt order must be awaiting payment before processing",
@@ -157,7 +153,7 @@ func (o *Order) StartProcessing() error {
 		}
 
 	default:
-		return errors.New("unknown payment timing")
+		return errors.New("unknown payment method")
 	}
 	o.status = OrderStatusProcessing
 	return nil
@@ -199,4 +195,43 @@ func (o *Order) Failed() error {
 		return errors.New("the payment status must be processing or refund processing")
 	}
 	return nil
+}
+
+func (o Order) ID() ID {
+	return o.id
+}
+
+func (o Order) BuyerID() BuyerID {
+	return o.buyerID
+}
+
+func (o Order) Status() OrderStatus {
+	return o.status
+}
+
+func (o Order) PaymentStatus() OrderPaymentStatus {
+	return o.paymentStatus
+}
+
+func (o Order) PaymentMethod() PaymentMethod {
+	return o.paymentMethod
+}
+
+func (o Order) Items() []OrderItem {
+	items := make([]OrderItem, len(o.items))
+	copy(items, o.items)
+
+	return items
+}
+
+func (o Order) DeliveryAddress() DeliveryAddress {
+	return o.deliveryAddress
+}
+
+func (o Order) BuyerComment() BuyerComment {
+	return o.buyerComment
+}
+
+func (o Order) CreatedAt() time.Time {
+	return o.createdAt
 }

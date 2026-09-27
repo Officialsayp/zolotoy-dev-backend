@@ -1,16 +1,22 @@
 package domain
 
+import "errors"
+
 type PaymentMethod string
 
 const (
-	PaymentMethodDebitCard  PaymentMethod = "debit_card"
-	PaymentMethodCreditCard PaymentMethod = "credit_card"
-	PaymentMethodSBP        PaymentMethod = "sbp"
+	PaymentMethodPrepaid            PaymentMethod = "prepaid"
+	PaymentMethodPayOnReceiptOnline PaymentMethod = "pay_on_receipt_online"
 )
 
-type PaymentTiming string
+func ParsePaymentMethod(value string) (PaymentMethod, error) {
+	method := PaymentMethod(value)
 
-const (
-	PaymentTimingPrepaid   PaymentTiming = "prepaid"
-	PaymentTimingOnReceipt PaymentTiming = "on_receipt"
-)
+	switch method {
+	case PaymentMethodPrepaid,
+		PaymentMethodPayOnReceiptOnline:
+		return method, nil
+	default:
+		return "", errors.New("unsupported payment method")
+	}
+}
