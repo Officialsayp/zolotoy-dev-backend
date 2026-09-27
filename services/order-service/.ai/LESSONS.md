@@ -169,3 +169,51 @@ Service Layer и Testing целиком не объявлены завершён
 DTO vs Domain на текущих request/response DTO и `domain.Order`.
 Затем настоящий `CreateOrder -> domain.Order -> OrderRepository -> memory -> PostgreSQL`;
 с memory-хранилищем довести сценарий до сохранения и получения заказа.
+
+## 2026-09-28 — DTO vs Domain и создание domain.Order
+
+### Завершено
+
+- разделены HTTP DTO, вход service и доменная модель;
+- request DTO `createOrderV1Request` / `createOrderItemRequest` и mapper
+  `toServiceInput()` → `service.CreateOrderInput`;
+- `ProductAvailability.IsAvailable(productID string, quantity int64) (bool, error)`;
+- domain mapping `CreateOrderInput.toDomainItems()` → `NewMoney` → `NewOrderItem`;
+- `OrderItem` обновлён до `ProductID`, `ProductNameSnapshot`, `Quantity`, `UnitPrice`, `TotalPrice`;
+- `PaymentMethod` обновлён до `prepaid` / `pay_on_receipt_online`, добавлен `ParsePaymentMethod`;
+- UUID создаётся в service через `uuid.NewString()`;
+- `OrderService.CreateOrder(input CreateOrderInput) (domain.Order, error)` создаёт и возвращает заказ;
+- getters `Order`, копия среза в `Items()` и mapper `newCreateOrderResponse`;
+- handler отправляет `createOrderResponse` с `201 Created`; `ErrInvalidOrder` даёт безопасный `400`;
+- три прежних service unit tests адаптированы к новому входу и возвращаемому значению.
+
+### Проверка в Bruno
+
+По результату ручной проверки пользователя, `Post-request.yml` вернул `201 Created`,
+серверный UUID, `status=created`, `payment_status=awaiting_payment`, `payment_method=prepaid`,
+`created_at` и `items[0].total_price=998000` для `499000 × 2`.
+В ответе также сохранены `buyer_id=buyer-123`, `delivery_address=Krasnodar`
+и `buyer_comment=Call before delivery`.
+
+Это проверка положительного HTTP-сценария. Три service unit tests проверяют исходы
+ошибок, а не поля заказа; у нового Bruno request ещё нет автоматических assertions.
+Старые Bruno-примеры с `{product}` относятся к предыдущему контракту.
+
+### Важные выводы
+
+- DTO описывает JSON; service input не зависит от HTTP; `domain.Order` хранит бизнес-состояние.
+- Клиент не задаёт UUID, начальные статусы и время создания: их формирует сервер.
+- `total_price` — сумма одной позиции; её считает domain, но имя и цена пока приходят из request.
+- Availability checker принимает количество, но учебная реализация его пока игнорирует.
+- Создание объекта и отправка JSON не означают сохранение заказа.
+
+### Точка остановки и следующее занятие
+
+Заказ пока **не сохраняется** и после запроса недоступен для повторного получения.
+GET остаётся учебным ответом по числовому ID; запрос с UUID из POST сейчас вернёт `400`.
+Repository и БД отсутствуют; весь Service Layer и Testing не объявлены завершёнными.
+
+Далее: `OrderRepository` interface → memory repository → POST Save → GET by ID → PostgreSQL.
+Начать с объяснения repository pattern, небольшого примера и одного задания на интерфейс;
+не реализовывать будущие этапы заранее. Memory-сценарий должен возвращать по UUID тот же
+заказ в рамках процесса; чтение после перезапуска проверяется на этапе PostgreSQL.

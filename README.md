@@ -14,19 +14,21 @@ Frontend живёт отдельно в [zolotoy-dev-frontend](https://github.co
 
 | Сервис | Назначение | Реализация в этом репозитории |
 | --- | --- | --- |
-| Order | Заказы, оплата, переходы состояний, идемпотентность и outbox | Локальный HTTP/service flow; отдельные доменные модели; без хранилища |
+| Order | Заказы, оплата, переходы состояний, идемпотентность и outbox | POST создаёт и возвращает domain.Order; GET учебный; без хранилища |
 | Auth | Пользователи, сессии, refresh rotation и RBAC | План; кода пока нет |
 | Notification | Событие → задание → попытки доставки, retries и dead jobs | План; кода пока нет |
 | URL Shortener | Короткие ссылки, redirect, Redis cache и аналитика | План; кода пока нет |
 
-Это работа в процессе, не готовая production-платформа. Текущий учебный этап Order —
-Service Layer. PostgreSQL, Kafka, Redis, авторизация и live-интеграция с frontend
-ещё не подключены. Kubernetes и API Gateway не нужны для начала разработки.
+Это работа в процессе, не готовая production-платформа. В Service Layer пройдены
+DTO vs Domain и создание заказа; следующий этап — `OrderRepository` и memory repository.
+PostgreSQL, Kafka, Redis, авторизация и live-интеграция с frontend ещё не подключены.
+Kubernetes и API Gateway не нужны для начала разработки.
 
 ## Быстрый старт
 
 Нужен Go версии не ниже указанной в [go.mod](services/order-service/go.mod).
-Текущий сервис использует только стандартную библиотеку; Docker и БД не требуются.
+HTTP использует стандартную библиотеку, UUID — `github.com/google/uuid`;
+Docker и БД для текущего этапа не требуются.
 
 ```bash
 git clone https://github.com/Officialsayp/zolotoy-dev-backend.git
@@ -42,11 +44,14 @@ go run ./cmd/order-service
 curl -i http://localhost:8080/health
 curl -i -X POST http://localhost:8080/orders \
   -H 'Content-Type: application/json' \
-  -d '{"product":"keyboard"}'
+  -d '{"buyer_id":"buyer-123","payment_method":"prepaid","items":[{"product_id":"keyboard-001","name":"Keyboard","quantity":2,"unit_price":499000,"currency":"RUB"}],"delivery_address":"Krasnodar","buyer_comment":"Call before delivery"}'
 ```
 
-Ожидаются 204 и 201 с `{"product":"keyboard"}` соответственно.
-POST пока **не сохраняет заказ**, а демонстрирует валидацию и вызов service.
+Ожидаются 204 для health и 201 с созданным заказом для POST: серверный UUID,
+`status=created`, `payment_status=awaiting_payment`, `payment_method=prepaid`,
+`items[0].total_price=998000` и `created_at`. Этот POST вручную проверен пользователем в Bruno.
+POST пока **не сохраняет заказ**: после запроса его нельзя получить повторно.
+GET остаётся учебным ответом по числовому ID и не читает repository.
 Подробности и Bruno — в [README Order Service](services/order-service/README.md).
 
 ## Структура
@@ -55,8 +60,8 @@ POST пока **не сохраняет заказ**, а демонстриру�
 services/order-service/   единственный реализованный Go-модуль
   cmd/order-service/      запуск сервера и текущие handlers
   internal/domain/        модели заказа, денег и оплаты
-  internal/service/       бизнес-проверки
-  api/bruno/              актуальная ручная коллекция
+  internal/service/       создание заказа и бизнес-проверки
+  api/bruno/              ручная коллекция; текущий POST в Post-request.yml
   .ai/                    обучение и журнал
 scripts/check.sh          форматирование, vet, build, test
 docs/                     архитектура и план развития
@@ -74,15 +79,18 @@ pending-review/           сохранённые эксперименты на �
 - [Материалы на разбор владельцу](pending-review/README.md)
 - [Текущий учебный контекст](services/order-service/.ai/SESSION_STATE.md)
 
-Сначала довести один проверяемый Order-сценарий до хранилища и согласованного API,
-затем подключать остальные темы по этапам. Не добавлять инфраструктуру ради списка
+Ближайшая последовательность: `OrderRepository` interface → memory repository →
+POST Save → GET by ID → затем PostgreSQL. Сначала проверить сохранение и получение
+одного заказа по UUID в памяти, затем постоянное хранение и согласованный API. Не добавлять инфраструктуру ради списка
 технологий и не выдавать целевые требования за реализованные возможности.
 
 ## Проверки
 
-`bash scripts/check.sh` запускает gofmt, go vet, go build и go test для Order Service.
-В исходном проекте отсутствовали автоматические тесты: успешная сборка сама по себе
-не доказывает корректность доменных переходов. GitHub Actions отдельно выполняет
+`bash scripts/check.sh` проверяет gofmt и запускает go vet, go build и go test для Order Service.
+Три service unit tests проверяют исходы available / unavailable / technical error;
+поля создаваемого заказа, DTO mapper и доменные переходы ими не покрыты.
+Ручная проверка Bruno подтверждает положительный POST, но не заменяет эти тесты.
+GitHub Actions отдельно выполняет
 build, lint, test и информационный security scan; его текущий `gosec -no-fail`
 не является блокирующим security gate. Интеграционный контур добавляется с реальными
 хранилищами и integration-тестами.

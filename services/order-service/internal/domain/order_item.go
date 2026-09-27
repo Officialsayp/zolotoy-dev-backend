@@ -3,36 +3,50 @@ package domain
 import "errors"
 
 type OrderItem struct {
-	SKU              SKU
-	Quantity         int64
-	UnitPrice        Money
-	Discount         Money
-	ReservedQuantity int64
+	ProductID           string
+	ProductNameSnapshot string
+	Quantity            int64
+	UnitPrice           Money
+	TotalPrice          Money
 }
 
 func NewOrderItem(
-	sku SKU,
+	productID string,
+	productName string,
 	quantity int64,
 	unitPrice Money,
-	discount Money,
 ) (OrderItem, error) {
 	switch {
-	case sku == "":
-		return OrderItem{}, errors.New("sku is empty")
+	case productID == "":
+		return OrderItem{}, errors.New("product id is empty")
+
+	case productName == "":
+		return OrderItem{}, errors.New("product name is empty")
+
 	case quantity <= 0:
-		return OrderItem{}, errors.New("quantity is empty")
-	case unitPrice.Amount < 0:
-		return OrderItem{}, errors.New("incorrect value unit price")
-	case discount.Amount < 0:
-		return OrderItem{}, errors.New("incorrect value discount")
-	case discount.Amount > unitPrice.Amount:
-		return OrderItem{}, errors.New("incorrect value discount")
+		return OrderItem{}, errors.New(
+			"quantity must be greater than zero",
+		)
+
+	case unitPrice.Amount <= 0:
+		return OrderItem{}, errors.New(
+			"unit price must be greater than zero",
+		)
 	}
+
+	totalPrice, err := NewMoney(
+		unitPrice.Amount*quantity,
+		unitPrice.Currency,
+	)
+	if err != nil {
+		return OrderItem{}, err
+	}
+
 	return OrderItem{
-		SKU:              sku,
-		Quantity:         quantity,
-		UnitPrice:        unitPrice,
-		Discount:         discount,
-		ReservedQuantity: 0,
+		ProductID:           productID,
+		ProductNameSnapshot: productName,
+		Quantity:            quantity,
+		UnitPrice:           unitPrice,
+		TotalPrice:          totalPrice,
 	}, nil
 }

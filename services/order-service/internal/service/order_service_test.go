@@ -10,7 +10,10 @@ type fakeProductAvailability struct {
 	err       error
 }
 
-func (f *fakeProductAvailability) IsAvailable(product string) (bool, error) {
+func (f *fakeProductAvailability) IsAvailable(
+	_ string,
+	_ int64,
+) (bool, error) {
 	return f.available, f.err
 }
 
@@ -18,8 +21,26 @@ func TestOrderService_CreateOrder_AvailableProduct(t *testing.T) {
 	availability := &fakeProductAvailability{
 		available: true,
 	}
+
 	orderService := NewOrderService(availability)
-	err := orderService.CreateOrder("keyboard")
+
+	input := CreateOrderInput{
+		BuyerID:       "buyer-123",
+		PaymentMethod: "prepaid",
+		Items: []CreateOrderItemInput{
+			{
+				ProductID: "keyboard",
+				Name:      "Keyboard",
+				Quantity:  1,
+				UnitPrice: 10000,
+				Currency:  "RUB",
+			},
+		},
+		DeliveryAddress: "Krasnodar",
+	}
+
+	_, err := orderService.CreateOrder(input)
+
 	if err != nil {
 		t.Fatalf("expected nil error, got %v", err)
 	}
@@ -30,7 +51,22 @@ func TestOrderService_CreateOrder_UnavailableProduct(t *testing.T) {
 		available: false,
 	}
 	orderService := NewOrderService(availability)
-	err := orderService.CreateOrder("keyboard")
+	input := CreateOrderInput{
+		BuyerID:       "buyer-123",
+		PaymentMethod: "prepaid",
+		Items: []CreateOrderItemInput{
+			{
+				ProductID: "keyboard",
+				Name:      "Keyboard",
+				Quantity:  1,
+				UnitPrice: 10000,
+				Currency:  "RUB",
+			},
+		},
+		DeliveryAddress: "Krasnodar",
+	}
+
+	_, err := orderService.CreateOrder(input)
 	if !errors.Is(err, ErrProductUnavailable) {
 		t.Fatalf("expected ErrProductUnavailable, got %v",
 			err,
@@ -43,7 +79,22 @@ func TestOrderService_CreateOrder_AvailabilityError(t *testing.T) {
 		err: expectedErr,
 	}
 	orderService := NewOrderService(availability)
-	err := orderService.CreateOrder("keyboard")
+	input := CreateOrderInput{
+		BuyerID:       "buyer-123",
+		PaymentMethod: "prepaid",
+		Items: []CreateOrderItemInput{
+			{
+				ProductID: "keyboard",
+				Name:      "Keyboard",
+				Quantity:  1,
+				UnitPrice: 10000,
+				Currency:  "RUB",
+			},
+		},
+		DeliveryAddress: "Krasnodar",
+	}
+
+	_, err := orderService.CreateOrder(input)
 	if !errors.Is(err, expectedErr) {
 		t.Fatalf("expected availability error, got %v", err)
 	}
