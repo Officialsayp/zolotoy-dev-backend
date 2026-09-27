@@ -135,3 +135,37 @@ Transport validation: JSON может быть синтаксически кор
 ### Следующее занятие
 
 Создать PR с форматированием, проверить зелёный lint и завершить первый сценарий business validation в Service Layer.
+
+## 2026-09-27 — ProductAvailability и unit tests OrderService
+
+### Завершено
+
+- контракт ошибок `OrderService`: недоступный товар и техническая ошибка зависимости;
+- `ProductAvailability` interface в пакете `service`, рядом с потребителем;
+- constructor injection через `NewOrderService(productAvailability)`;
+- учебный `memory.AvailabilityChecker` с правилом для товара `unavailable`;
+- wiring в `main`: создание checker, передача в service и передача service в handler;
+- ручная проверка доступного и недоступного товара через Bruno по итогам занятия;
+- три unit-теста `OrderService` с fake-зависимостью: available → `nil`,
+  unavailable → `ErrProductUnavailable`, technical error → ошибка зависимости.
+
+### Важные выводы
+
+- Service зависит от поведения интерфейса, конкретную реализацию выбирает `main`.
+- Конструктор явно принимает зависимость; в тесте вместо memory checker можно передать fake.
+- `false, nil` означает недоступный товар, а ненулевая ошибка — сбой самой проверки.
+- Техническая ошибка не подменяется бизнес-ошибкой; handler отвечает за безопасный HTTP-ответ.
+- Unit tests service проверяют его логику без HTTP-сервера и БД.
+
+### Граница текущего результата
+
+`CreateOrder` пока не создаёт `domain.Order` и не сохраняет заказ. Memory checker
+проверяет доступность товара; будущий memory repository будет хранить заказы.
+Доменные модели уже есть, но их интеграция с текущим HTTP/service flow ещё впереди.
+Service Layer и Testing целиком не объявлены завершёнными.
+
+### Следующее занятие
+
+DTO vs Domain на текущих request/response DTO и `domain.Order`.
+Затем настоящий `CreateOrder -> domain.Order -> OrderRepository -> memory -> PostgreSQL`;
+с memory-хранилищем довести сценарий до сохранения и получения заказа.

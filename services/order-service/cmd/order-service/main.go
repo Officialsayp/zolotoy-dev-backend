@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Officialsayp/zolotoy-dev-backend/services/order-service/internal/availability/memory"
 	"github.com/Officialsayp/zolotoy-dev-backend/services/order-service/internal/service"
 )
 
@@ -107,7 +108,8 @@ func createOrderHandler(orderService *service.OrderService) http.HandlerFunc {
 }
 
 func main() {
-	orderService := &service.OrderService{}
+	availabilityChecker := &memory.AvailabilityChecker{}
+	orderService := service.NewOrderService(availabilityChecker)
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /orders/{id}", getOrderHandler)
 	mux.Handle("GET /health", http.HandlerFunc(healthHandler))

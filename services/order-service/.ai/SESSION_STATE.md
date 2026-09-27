@@ -2,7 +2,8 @@
 
 ## Текущий этап
 
-Service Layer
+Service Layer: ProductAvailability и базовые unit tests пройдены.
+Следующая тема — DTO vs Domain.
 
 ## Изучено
 
@@ -26,18 +27,47 @@ Service Layer
 - Bruno assertions для `400` при пустом `product`, пробелах и некорректном JSON;
 - различие transport validation и business validation;
 - начальная связка `main -> handler -> OrderService` через передачу зависимости в `createOrderHandler`.
+- контракт ошибок: `ErrProductUnavailable`, `errors.Is` и безопасные HTTP-ответы `400`/`500`;
+- интерфейс `ProductAvailability` рядом с потребителем в пакете `service`;
+- constructor injection через `NewOrderService(productAvailability)`;
+- учебная memory-реализация `AvailabilityChecker`: `unavailable` недоступен, остальные товары доступны;
+- wiring в `main`: `memory.AvailabilityChecker -> NewOrderService -> createOrderHandler`;
+- ручная проверка доступного и недоступного товара через Bruno;
+- unit tests `OrderService` с `fakeProductAvailability`: available, unavailable и technical error;
+- передача технической ошибки зависимости вызывающему коду и проверка через `errors.Is`.
 
-## Состояние по коду на 2026-09-14
+## Состояние по коду на 2026-09-27
 
-В main включён PR #17 (`95c8285`). Handler использует errors.Is для
-ErrProductUnavailable, возвращает безопасные 400/500 и нормализованный product.
-Старое поручение повторно создать PR после #10 больше не актуально.
+Рабочая ветка: `feature/service-error-contract`.
+
+- `internal/service/order_service.go` — `ProductAvailability`, конструктор и проверка доступности.
+- `internal/availability/memory/checker.go` — учебная реализация интерфейса.
+- `cmd/order-service/main.go` — сборка зависимостей и HTTP handlers.
+- `internal/service/order_service_test.go` — три unit-теста исходов `CreateOrder`.
+- Handler нормализует `product`, сопоставляет `ErrProductUnavailable` с безопасным `400`,
+  а техническую ошибку — с безопасным `500`.
+
+`CreateOrder(product string) error` пока только проверяет доступность товара:
+`domain.Order` не создаётся и не сохраняется. `memory.AvailabilityChecker` —
+проверка доступности, а не хранилище заказов. `GET /orders/{id}` остаётся учебным
+ответом без чтения из repository. Этот этап ещё не заменяет mock на zolotoy.dev.
 
 ## Текущая задача обучения
 
-Продолжить Service Layer: разобрать контракт ошибок и границу HTTP/business logic.
-Не считать весь этап завершённым только по наличию кода. Следующее упражнение
-согласовать в учебном диалоге; PostgreSQL и другие будущие уроки заранее не решены.
+Разобрать DTO vs Domain на существующих `createOrderRequest`, `createOrderResponse`
+и `internal/domain.Order`: данные HTTP-запроса/ответа, бизнес-состояние и правила,
+границы преобразования между ними. Сначала объяснение и небольшой пример,
+затем одно самостоятельное задание.
+
+Дальнейшая последовательность:
+
+1. Настоящий `CreateOrder`, который создаёт `domain.Order`.
+2. Интерфейс `OrderRepository` и memory-хранилище: сохранить заказ и получить его обратно.
+3. PostgreSQL-реализация хранения после освоения memory-сценария.
+
+Не считать весь Service Layer или Testing завершёнными по этим трём тестам.
+Создание заказа, repository и PostgreSQL остаются будущими учебными задачами;
+их реализацию заранее не писать.
 
 ## Переезд структуры
 
